@@ -4,6 +4,7 @@ pipeline {
     environment {
         IMAGE_NAME = "sochaucoder/school-frontend"
         IMAGE_TAG = "latest"
+        CONTAINER_NAME = "school-frontend"
     }
 
     stages {
@@ -40,10 +41,21 @@ pipeline {
                     passwordVariable: 'DOCKER_PASS'
                 )]) {
                     sh '''
-                    echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                    echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
                     docker push $IMAGE_NAME:$IMAGE_TAG
                     '''
                 }
+            }
+        }
+
+        stage('Deploy Frontend') {
+            steps {
+                sh '''
+                docker pull $IMAGE_NAME:$IMAGE_TAG
+                docker stop $CONTAINER_NAME || true
+                docker rm $CONTAINER_NAME || true
+                docker run -d --name $CONTAINER_NAME -p 3001:80 $IMAGE_NAME:$IMAGE_TAG
+                '''
             }
         }
     }
